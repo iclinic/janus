@@ -20,7 +20,7 @@ if [ ! -z "${JANUS_BUILD_ONLY_DEFAULT}" ]; then
 fi
 
 # Build 386 amd64 binaries
-OS_PLATFORM_ARG=(linux darwin windows freebsd openbsd)
+OS_PLATFORM_ARG=(linux darwin)
 OS_ARCH_ARG=(386 amd64)
 for OS in ${OS_PLATFORM_ARG[@]}; do
   for ARCH in ${OS_ARCH_ARG[@]}; do
@@ -29,12 +29,12 @@ for OS in ${OS_PLATFORM_ARG[@]}; do
   done
 done
 
-# Build arm binaries
-OS_PLATFORM_ARG=(linux)
-OS_ARCH_ARG=(arm arm64)
-for OS in ${OS_PLATFORM_ARG[@]}; do
-  for ARCH in ${OS_ARCH_ARG[@]}; do
-    echo "Building binary for $OS/$ARCH..."
-    GOARCH=$ARCH GOOS=$OS CGO_ENABLED=0 go build -ldflags "-s -w" -ldflags "-X main.version=${VERSION}" -o "dist/janus_$OS-$ARCH" $PKG_SRC
-  done
-done
+# # Build arm binaries
+# OS_PLATFORM_ARG=(linux)
+# OS_ARCH_ARG=(arm arm64)
+# for OS in ${OS_PLATFORM_ARG[@]}; do
+#   for ARCH in ${OS_ARCH_ARG[@]}; do
+#     echo "Building binary for $OS/$ARCH..."
+#     GOARCH=$ARCH GOOS=$OS CGO_ENABLED=0 go build -ldflags "-s -w" -ldflags "-X main.version=${VERSION}" -o "dist/janus_$OS-$ARCH" $PKG_SRC
+#   done
+# done

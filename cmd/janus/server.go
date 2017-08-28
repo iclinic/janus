@@ -25,6 +25,9 @@ import (
 	_ "github.com/hellofresh/janus/pkg/plugin/requesttransformer"
 	_ "github.com/hellofresh/janus/pkg/plugin/responsetransformer"
 
+	// iclinic
+	_ "github.com/hellofresh/janus/pkg/plugin/icauth"
+
 	// internal plugins
 	_ "github.com/hellofresh/janus/pkg/loader"
 	_ "github.com/hellofresh/janus/pkg/web"
