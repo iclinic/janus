@@ -1,10 +1,10 @@
 package icauth
 
 import (
+	// "io/ioutil"
 	"fmt"
 	"encoding/json"
 	"context"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -76,23 +76,19 @@ func Midleware(url string) func(http.Handler) http.Handler {
 			}
 			defer resp.Body.Close()
 
-			if _, err := ioutil.ReadAll(resp.Body); err != nil {
-				log.Error("Error when parsing identity service response ", err)
-				errors.Handler(w, ErrParseServiceResponse)
-				return
+			if resp.StatusCode == http.StatusCreated {
+				var token Token
+				err := json.NewDecoder(resp.Body).Decode(&token)
+				if err != nil {
+					log.Error("Error when parsing identity service response ", err)
+					errors.Handler(w, ErrParseServiceResponse)
+					return
+				}
+				ctx := context.WithValue(r.Context(), "token", token.Token)
+				handler.ServeHTTP(w, r.WithContext(ctx))
+			} else {
+				handler.ServeHTTP(w, r)
 			}
-		
-			var token Token
-			errParse := json.NewDecoder(resp.Body).Decode(&token)
-			if errParse != nil {
-				log.Error("Error when parsing identity service response ", errParse)
-				errors.Handler(w, ErrParseServiceResponse)
-				return
-			}
-			ctx := context.WithValue(r.Context(), "token", token.Token)
-			handler.ServeHTTP(w, r.WithContext(ctx))
-
-			handler.ServeHTTP(w, r)
 		})
 	}
 }
@@ -101,8 +97,19 @@ func Midleware(url string) func(http.Handler) http.Handler {
 func OutMiddleware(url string) proxy.OutLink {
 	return func(req *http.Request, res *http.Response) (*http.Response, error) {
 		value := req.Context().Value("token")
-		log.Debug("Outbound middleware.........")
-		log.WithField("value", value).Debug("Debugging Context token value...")
+		if value != nil {
+			res.Header.Add("X-iClinic-Token", value.(string))
+			log.WithField("token", value.(string)).Info("Here is the token JWT....")
+
+			var data interface{}
+			err := json.NewDecoder(res.Body).Decode(&data)
+			if err != nil {
+				log.Error("Error when parsing identity service response ", err)
+				return res, nil
+			}
+			log.Infof("DAATAA: %v", data)
+
+		}
 		return res, nil
 	}
 }
