@@ -1,7 +1,6 @@
 package icauth
 
 import (
-	// "io/ioutil"
 	"fmt"
 	"encoding/json"
 	"context"
@@ -99,16 +98,6 @@ func OutMiddleware(url string) proxy.OutLink {
 		value := req.Context().Value("token")
 		if value != nil {
 			res.Header.Add("X-iClinic-Token", value.(string))
-			log.WithField("token", value.(string)).Info("Here is the token JWT....")
-
-			var data interface{}
-			err := json.NewDecoder(res.Body).Decode(&data)
-			if err != nil {
-				log.Error("Error when parsing identity service response ", err)
-				return res, nil
-			}
-			log.Infof("DAATAA: %v", data)
-
 		}
 		return res, nil
 	}
