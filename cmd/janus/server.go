@@ -27,6 +27,7 @@ import (
 
 	// iclinic
 	_ "github.com/hellofresh/janus/pkg/plugin/icauth"
+	_ "github.com/hellofresh/janus/pkg/plugin/icsignup"
 
 	// internal plugins
 	_ "github.com/hellofresh/janus/pkg/loader"
