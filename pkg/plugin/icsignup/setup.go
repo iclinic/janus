@@ -1,53 +1,28 @@
 package icsignup
 
 import (
-	"github.com/hellofresh/janus/pkg/router"
-	"github.com/hellofresh/janus/pkg/plugin"
 	"github.com/hellofresh/janus/pkg/proxy"
-	"github.com/pkg/errors"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/hellofresh/janus/pkg/plugin"
 )
 
-var (
-	adminRouter router.Router
-)
+// Config has a URL field which stores identity verify token url
+type Config struct {
+	AuthURL string `json:"auth_url"`
+	ApiURL string `json:"api_url"`
+}
 
-func init() {
-	plugin.RegisterEventHook(plugin.StartupEvent, onStartup)
-	// plugin.RegisterEventHook(plugin.AdminAPIStartupEvent, onAdminAPIStartup)
-	plugin.RegisterPlugin("ic_signup", plugin.Plugin{
-		Action: setupICSignUp,
+func init()  {
+	plugin.RegisterPlugin("signup", plugin.Plugin{
+		Action: setupSignup,
 	})
 }
 
-func setupICSignUp(route *proxy.Route, rawConfig plugin.Config) error {
-	return nil
-}
-
-// func onAdminAPIStartup(event interface{}) error {
-// 	e, ok := event.(plugin.OnAdminAPIStartup)
-// 	if !ok {
-// 		return errors.New("Could not convert event to admin startup type")
-// 	}
-
-// 	adminRouter = e.Router
-// 	return nil
-// }
-
-func onStartup(event interface{}) error {
-
-	e, ok := event.(plugin.OnStartup)
-	if !ok {
-		return errors.New("Could not convert event to startup type")
+func setupSignup(route *proxy.Route, rawConfig plugin.Config) error {
+	var config Config
+	err := plugin.Decode(rawConfig, &config)
+	if err != nil {
+		return err
 	}
-	
-	log.Debug("Loading iClinic Signup endpoints...")
-
-	handlers := NewHandler()
-	group := e.Register.Router.Group("/v2/signup")
-	{
-		group.POST("/", handlers.Post())
-	}
+	route.AddInbound(Midleware(config.AuthURL, config.ApiURL))
 	return nil
 }
