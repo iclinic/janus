@@ -33,9 +33,9 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 				return
 			}
 
-			incomingBufBody, _ := ioutil.ReadAll(r.Body)
+			incomingBodyBuffer, _ := ioutil.ReadAll(r.Body)
 
-			res, err := DoPost(authURL, partner, incomingBufBody)
+			res, err := DoPost(authURL, partner, incomingBodyBuffer)
 			if err != nil {
 				log.Error("Fail when communicating to auth service ", err)
 				errors.Handler(w, ErrAuthCommunication)
@@ -53,7 +53,7 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 				}
 
 				var postData interface{}
-				errPostData := json.NewDecoder(bytes.NewBuffer(incomingBufBody)).Decode(&postData)
+				errPostData := json.NewDecoder(bytes.NewBuffer(incomingBodyBuffer)).Decode(&postData)
 				if errPostData != nil {
 					log.Error("Error parsing api data. ", errPostData)
 					errors.Handler(w, errors.New(http.StatusInternalServerError, "Error when communicating to auth service"))
