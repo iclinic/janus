@@ -83,6 +83,9 @@ func Midleware(url string) func(http.Handler) http.Handler {
 					errors.Handler(w, ErrParseServiceResponse)
 					return
 				}
+
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
+
 				ctx := context.WithValue(r.Context(), "token", token.Token)
 				handler.ServeHTTP(w, r.WithContext(ctx))
 			} else {
