@@ -1,6 +1,7 @@
 package icsignup
 
 import (
+	"strings"
 	"time"
 	"io/ioutil"
 	"bytes"
@@ -22,7 +23,7 @@ var (
 
 
 // Midleware will hit iclinic auth service
-func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
+func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Error("[signup middleware] - Starting...")
@@ -35,7 +36,7 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 
 			incomingBodyBuffer, _ := ioutil.ReadAll(r.Body)
 
-			res, err := DoPost(authURL, partner, incomingBodyBuffer)
+			res, err := DoRequest(http.MethodPost, createUserURL, partner, incomingBodyBuffer)
 			if err != nil {
 				log.Error("Fail when communicating to auth service ", err)
 				errors.Handler(w, ErrAuthCommunication)
@@ -69,7 +70,7 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 					log.Error("Error when auth service error happened.", err)
 				}
 
-				res, err := DoPost(apiURL, "", apiBufBody.Bytes())
+				res, err := DoRequest(http.MethodPost, subscriptionURL, "", apiBufBody.Bytes())
 				if err != nil {
 					log.Error("Error when auth service error happened.", err)
 				}
@@ -80,6 +81,7 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 						"created": true,
 					})
 				} else {
+					// error when posting subscription data
 					var data interface{}
 					err := json.NewDecoder(res.Body).Decode(&data)
 					if err != nil {
@@ -87,6 +89,11 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 						errors.Handler(w, errors.New(res.StatusCode, "Error when communicating to auth service"))
 						return
 					}
+
+					deleteUserEndpoint := strings.Replace(deleteUserURL, "<id>", apiData["user"].(string), 1)
+
+					DoRequest(http.MethodDelete, deleteUserEndpoint, partner, nil)
+
 					render.JSON(w, res.StatusCode, data)
 				}
 
@@ -104,9 +111,9 @@ func Midleware(authURL, apiURL string) func(http.Handler) http.Handler {
 	}
 }
 
-// DoPost is used to make a post request
-func DoPost(url, partner string, body []byte) (*http.Response, error) {
-	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+// DoRequest is used to make a http request
+func DoRequest(method, url, partner string, body []byte) (*http.Response, error) {
+	req, _ := http.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-iClinic-Partner", partner)

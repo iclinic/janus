@@ -7,8 +7,9 @@ import (
 
 // Config has a URL field which stores identity verify token url
 type Config struct {
-	AuthURL string `json:"auth_url"`
-	ApiURL string `json:"api_url"`
+	CreateUserURL string `json:"createuser_url"`
+	DeleteUserURL string `json:"deleteuser_url"`
+	SubscriptionURL string `json:"subscription_url"`
 }
 
 func init()  {
@@ -23,6 +24,6 @@ func setupSignup(route *proxy.Route, rawConfig plugin.Config) error {
 	if err != nil {
 		return err
 	}
-	route.AddInbound(Midleware(config.AuthURL, config.ApiURL))
+	route.AddInbound(Midleware(config.CreateUserURL, config.DeleteUserURL, config.SubscriptionURL))
 	return nil
 }
