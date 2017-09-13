@@ -15,17 +15,15 @@ import (
 
 var (
 	// ErrAuthorizationFieldNotFound is used when the http Authorization header is missing from the request
-	ErrAuthorizationFieldNotFound = errors.New(http.StatusBadRequest, "Authorization field missing")
+	ErrAuthorizationFieldNotFound = errors.New(http.StatusBadRequest, "Authorization Header inválido.")
 	// ErrBearerMalformed is used when the Bearer string in the Authorization header is not found or is malformed
-	ErrBearerMalformed = errors.New(http.StatusBadRequest, "Bearer token malformed")
+	ErrBearerMalformed = errors.New(http.StatusBadRequest, "Bearer token mal formado.")
 	// ErrAccessTokenNotAuthorized is used when the access token is not found on the storage
-	ErrAccessTokenNotAuthorized = errors.New(http.StatusUnauthorized, "access token not authorized")
-	// ErrPartnerFieldNotFound is used when the http X-iClinic-Partner is missing from the requrest
-	ErrPartnerFieldNotFound = errors.New(http.StatusBadRequest, "X-iClinic-Partner field missing")
+	ErrAccessTokenNotAuthorized = errors.New(http.StatusUnauthorized, "Token não autorizado.")
 	// ErrVerifyToken is used when a http get request to the identity service could not be made
-	ErrVerifyToken = errors.New(http.StatusInternalServerError, "Could not communicate to our identity service")
+	ErrVerifyToken = errors.New(http.StatusInternalServerError, "Falha ao comunicar com serviço.")
 	// ErrParseServiceResponse is used when http get request response from identity service could not be parsed
-	ErrParseServiceResponse = errors.New(http.StatusInternalServerError, "Could not parse service response")
+	ErrParseServiceResponse = errors.New(http.StatusInternalServerError, "Falha ao interpretar resposta do serviço.")
 )
 
 // Token JWT returned from identity service
@@ -49,12 +47,6 @@ func Midleware(url string) func(http.Handler) http.Handler {
 				return
 			}
 
-			partner := r.Header.Get("X-iClinic-Partner")
-			if partner == "" {
-				errors.Handler(w, ErrPartnerFieldNotFound)
-				return
-			}
-
 			jwtToken := parts[1]
 
 			req, err := http.NewRequest("GET", url, nil)
@@ -62,9 +54,7 @@ func Midleware(url string) func(http.Handler) http.Handler {
 				log.Warn("Could not make a request to our services...", jwtToken, url)
 				return
 			}
-
 			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
-			req.Header.Add("X-iClinic-Partner", partner)
 
 			client := &http.Client{Timeout: time.Minute * 3}
 			resp, err := client.Do(req)

@@ -15,10 +15,12 @@ import (
 )
 
 var (
-	// ErrPartnerFieldNotFound is used when the http X-iClinic-Partner is missing from the requrest
-	ErrPartnerFieldNotFound = errors.New(http.StatusBadRequest, "X-iClinic-Partner field missing")
 	// ErrAuthCommunication is used when http post request response from auth service could not be done
-	ErrAuthCommunication = errors.New(http.StatusInternalServerError, "Could not communicate to auth service")
+	ErrAuthCommunication = errors.New(http.StatusInternalServerError, "Falha ao comunicar com serviço.")
+	// ErrParseAuthResponse is used when http post response from auth service could not be parsed
+	ErrParseAuthResponse = errors.New(http.StatusInternalServerError, "Falha ao interpretar resposta de um de nossos serviços.")
+	// ErrParseIncomeRequestdata is used when request data could not be parsed
+	ErrParseIncomeRequestdata = errors.New(http.StatusInternalServerError, "Falha ao intepretar dados recebidos.")
 )
 
 
@@ -28,15 +30,9 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Error("[signup middleware] - Starting...")
 
-			partner := r.Header.Get("X-iClinic-Partner")
-			if partner == "" {
-				errors.Handler(w, ErrPartnerFieldNotFound)
-				return
-			}
-
 			incomingBodyBuffer, _ := ioutil.ReadAll(r.Body)
 
-			res, err := DoRequest(http.MethodPost, createUserURL, partner, incomingBodyBuffer)
+			res, err := DoRequest(http.MethodPost, createUserURL, incomingBodyBuffer)
 			if err != nil {
 				log.Error("Fail when communicating to auth service ", err)
 				errors.Handler(w, ErrAuthCommunication)
@@ -48,16 +44,16 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 				var userData interface{}
 				err := json.NewDecoder(res.Body).Decode(&userData)
 				if err != nil {
-					log.Error("Error parsing auth data.", err)
-					errors.Handler(w, errors.New(http.StatusInternalServerError, "Error when communicating to auth service"))
+					log.Error("Error when parsing auth service response.", err)
+					errors.Handler(w, ErrParseAuthResponse)
 					return
 				}
 
 				var postData interface{}
 				errPostData := json.NewDecoder(bytes.NewBuffer(incomingBodyBuffer)).Decode(&postData)
 				if errPostData != nil {
-					log.Error("Error parsing api data. ", errPostData)
-					errors.Handler(w, errors.New(http.StatusInternalServerError, "Error when communicating to auth service"))
+					log.Error("Error when parsing request data. ", errPostData)
+					errors.Handler(w, ErrParseIncomeRequestdata)
 					return
 				}
 
@@ -67,12 +63,12 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 				apiBufBody := &bytes.Buffer{}
 				errAPIBufBody := json.NewEncoder(apiBufBody).Encode(apiData)
 				if errAPIBufBody != nil {
-					log.Error("Error when auth service error happened.", err)
+					log.Error("Error when buffering api request data.", err)
 				}
 
-				res, err := DoRequest(http.MethodPost, subscriptionURL, "", apiBufBody.Bytes())
+				res, err := DoRequest(http.MethodPost, subscriptionURL, apiBufBody.Bytes())
 				if err != nil {
-					log.Error("Error when auth service error happened.", err)
+					log.Error("Error when posting user data to api.", err)
 				}
 				defer res.Body.Close()
 
@@ -85,14 +81,14 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 					var data interface{}
 					err := json.NewDecoder(res.Body).Decode(&data)
 					if err != nil {
-						log.Error("Error when auth service error happened.", err)
-						errors.Handler(w, errors.New(res.StatusCode, "Error when communicating to auth service"))
+						log.Error("Error when subscribing user to api.", err)
+						errors.Handler(w, errors.New(res.StatusCode, "Falha ao efetivar cadastro."))
 						return
 					}
 
 					deleteUserEndpoint := strings.Replace(deleteUserURL, "<id>", apiData["user"].(string), 1)
 
-					DoRequest(http.MethodDelete, deleteUserEndpoint, partner, nil)
+					DoRequest(http.MethodDelete, deleteUserEndpoint, nil)
 
 					render.JSON(w, res.StatusCode, data)
 				}
@@ -102,7 +98,7 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 				err := json.NewDecoder(res.Body).Decode(&data)
 				if err != nil {
 					log.Error("Error when auth service error happened.", err)
-					errors.Handler(w, errors.New(res.StatusCode, "Error when communicating to auth service"))
+					errors.Handler(w, errors.New(res.StatusCode, "Falha ao enviar dados de cadastro."))
 					return
 				}
 				render.JSON(w, res.StatusCode, data)
@@ -112,11 +108,10 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 }
 
 // DoRequest is used to make a http request
-func DoRequest(method, url, partner string, body []byte) (*http.Response, error) {
+func DoRequest(method, url string, body []byte) (*http.Response, error) {
 	req, _ := http.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-iClinic-Partner", partner)
 
 	client := &http.Client{Timeout: time.Second * 60}
 	res, err := client.Do(req)
