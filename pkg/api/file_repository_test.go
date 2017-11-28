@@ -8,6 +8,7 @@ import (
 
 	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newRepo(t *testing.T) *FileSystemRepository {
@@ -32,27 +33,33 @@ func TestNewFileSystemRepository(t *testing.T) {
 
 	allDefinitions, err := fsRepo.FindAll()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(allDefinitions))
+	assert.Equal(t, 3, len(allDefinitions))
 
 	healthDefinitions, err := fsRepo.FindValidAPIHealthChecks()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(healthDefinitions))
+	assert.Equal(t, 3, len(healthDefinitions))
 
 	assertFindByName(t, fsRepo)
 	assertFindByFindByListenPath(t, fsRepo)
 	assertExists(t, fsRepo)
 
-	defToAdd := &Definition{Name: "foo-bar", Proxy: &proxy.Definition{ListenPath: "/foo/bar/*"}}
+	defToAdd := &Definition{
+		Name: "foo-bar",
+		Proxy: &proxy.Definition{
+			ListenPath:  "/foo/bar/*",
+			UpstreamURL: "http://example.com/foo/bar/",
+		},
+	}
 	err = fsRepo.Add(defToAdd)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	def, err := fsRepo.FindByName(defToAdd.Name)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, defToAdd.Name, def.Name)
 	assert.Equal(t, defToAdd.Proxy.ListenPath, def.Proxy.ListenPath)
 
 	def, err = fsRepo.FindByListenPath(defToAdd.Proxy.ListenPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, defToAdd.Name, def.Name)
 	assert.Equal(t, defToAdd.Proxy.ListenPath, def.Proxy.ListenPath)
 
@@ -68,7 +75,7 @@ func TestNewFileSystemRepository(t *testing.T) {
 	assert.Equal(t, ErrAPIListenPathExists, err)
 
 	err = fsRepo.Remove(defToAdd.Name)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = fsRepo.Remove(defToAdd.Name)
 	assert.Equal(t, ErrAPIDefinitionNotFound, err)
@@ -80,8 +87,8 @@ func TestNewFileSystemRepository(t *testing.T) {
 	assert.Equal(t, ErrAPIDefinitionNotFound, err)
 
 	exists, err = fsRepo.Exists(defToAdd)
+	require.NoError(t, err)
 	assert.False(t, exists)
-	assert.NoError(t, err)
 }
 
 func assertFindByName(t *testing.T, fsRepo *FileSystemRepository) {

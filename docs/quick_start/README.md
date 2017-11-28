@@ -7,11 +7,11 @@
 
 ## Download
 
-You can get Janus for nearly any OS and architecture. You can get the latest Janus realease on [Github](https://github.com/hellofresh/janus/releases).
+You can get Janus for nearly any OS and architecture. You can get the latest Janus release on [Github](https://github.com/hellofresh/janus/releases).
 
 ## Install and run
 
-We higly recommend you to use one of your examples to start. Let's see the [front-proxy](/examples/front-proxy) example:
+We highly recommend you to use one of our examples to start. Let's see the [front-proxy-mongo](/examples/front-proxy-mongo) example:
 
 Make sure you have docker up and running on your platform and then run.
 
@@ -23,7 +23,7 @@ This will spin up a janus server and will have a small proxy configuration that 
 
 ## Configure
 
-If you access `http://localhost:8080/` you should something like:
+If you access `http://localhost:8080/example` you should something like:
 
 ```json
 {
@@ -34,4 +34,6 @@ If you access `http://localhost:8080/` you should something like:
 That means that Janus already proxied your request to an upstream. But of course you don't just want to do that. For this reason
 now is the perfect time for you to learn about all the available configurations that you can play with.
 
-Next, lest's learn about how to [configure a new endpoint](create_definition.md).
+> Note: If you are using the file-based configuration you will not be able to use the write administration API to add/modify/remove new endpoints, plugins, etc. Please check this [tutorial](./file_system.md) if you'd like to add a new endpoint using the file-based configuration.
+
+Next, let's learn about how to [configure a new endpoint](authenticating.md).

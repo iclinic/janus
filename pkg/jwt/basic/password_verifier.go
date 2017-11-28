@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -34,10 +33,9 @@ func NewPasswordVerifier(users []*user) *PasswordVerifier {
 }
 
 // Verify makes a check and return a boolean if the check was successful or not
-func (v *PasswordVerifier) Verify(r *http.Request) (bool, error) {
+func (v *PasswordVerifier) Verify(r *http.Request, httpClient *http.Client) (bool, error) {
 	currentUser, err := v.getUserFromRequest(r)
 	if err != nil {
-		log.Debug("Could not get user from request")
 		return false, errors.Wrap(err, "could not get user from request")
 	}
 
@@ -47,12 +45,7 @@ func (v *PasswordVerifier) Verify(r *http.Request) (bool, error) {
 		}
 	}
 
-	log.WithFields(log.Fields{
-		"have": currentUser,
-		"want": v.users,
-	}).Debug("not in the user list")
-
-	return false, nil
+	return false, errors.New("incorrect username or password")
 }
 
 func (v *PasswordVerifier) getUserFromRequest(r *http.Request) (*user, error) {
@@ -68,12 +61,14 @@ func (v *PasswordVerifier) getUserFromRequest(r *http.Request) (*user, error) {
 	}
 
 	// checks if the content is json otherwise just get from the form params
-	if r.Header.Get("Content-Type") == contentTypeJSON {
+	contentType := filterFlags(r.Header.Get("Content-Type"))
+	switch contentType {
+	case contentTypeJSON:
 		err := json.NewDecoder(r.Body).Decode(&u)
 		if err != nil {
 			return u, errors.Wrap(err, "could not parse the json body")
 		}
-	} else {
+	default:
 		r.ParseForm()
 
 		u = &user{
@@ -83,4 +78,13 @@ func (v *PasswordVerifier) getUserFromRequest(r *http.Request) (*user, error) {
 	}
 
 	return u, nil
+}
+
+func filterFlags(content string) string {
+	for i, char := range content {
+		if char == ' ' || char == ';' {
+			return content[:i]
+		}
+	}
+	return content
 }

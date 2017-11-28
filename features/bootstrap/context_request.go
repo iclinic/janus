@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/DATA-DOG/godog"
+	"github.com/DATA-DOG/godog/gherkin"
+	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/hellofresh/janus/pkg/config"
 	"github.com/hellofresh/janus/pkg/jwt"
 	"github.com/tidwall/gjson"
@@ -41,7 +43,7 @@ func RegisterRequestContext(s *godog.Suite, port, apiPort, portSecondary, apiPor
 	s.Step(`^response JSON body has "([^"]*)" path with value \'([^']*)\'$`, ctx.responseJSONBodyHasPathWithValue)
 	s.Step(`^response JSON body has "([^"]*)" path`, ctx.responseJSONBodyHasPath)
 	s.Step(`^response JSON body is an array of length (\d+)$`, ctx.responseJSONBodyIsAnArrayOfLength)
-	s.Step(`^request JSON payload \'([^']*)\'$`, ctx.requestJSONPayload)
+	s.Step(`^request JSON payload:$`, ctx.requestJSONPayload)
 	s.Step(`^request header "([^"]*)" is set to "([^"]*)"$`, ctx.requestHeaderIsSetTo)
 	s.Step(`^request JWT token is not set$`, ctx.requestJWTTokenIsNotSet)
 	s.Step(`^request JWT token is valid admin token$`, ctx.requestJWTTokenIsValidAdminToken)
@@ -182,8 +184,8 @@ func (c *requestContext) responseJSONBodyIsAnArrayOfLength(length int) error {
 	return nil
 }
 
-func (c *requestContext) requestJSONPayload(payload string) error {
-	c.requestBody = bytes.NewBufferString(payload)
+func (c *requestContext) requestJSONPayload(body *gherkin.DocString) error {
+	c.requestBody = bytes.NewBufferString(body.Content)
 	return nil
 }
 
@@ -199,12 +201,12 @@ func (c *requestContext) requestJWTTokenIsNotSet() error {
 
 func (c *requestContext) requestJWTTokenIsValidAdminToken() error {
 	jwtConfig := jwt.NewGuard(c.adminCred)
-	accessToken, err := jwt.IssueAdminToken(jwtConfig.SigningMethod, make(map[string]interface{}), jwtConfig.Timeout)
+	accessToken, err := jwt.IssueAdminToken(jwtConfig.SigningMethod, jwtgo.MapClaims{}, jwtConfig.Timeout)
 	if nil != err {
 		return fmt.Errorf("Failed to issue JWT: %v", err)
 	}
 
-	c.requestHeaders.Set(headerAuthorization, "Bearer "+accessToken)
+	c.requestHeaders.Set(headerAuthorization, "Bearer "+accessToken.Token)
 
 	return nil
 }

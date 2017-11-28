@@ -6,13 +6,15 @@
 [![codecov](https://codecov.io/gh/hellofresh/janus/branch/master/graph/badge.svg)](https://codecov.io/gh/hellofresh/janus)
 [![GoDoc](https://godoc.org/github.com/hellofresh/janus?status.svg)](https://godoc.org/github.com/hellofresh/janus)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hellofresh/janus)](https://goreportcard.com/report/github.com/hellofresh/janus)
-
+[![Join us on slack](https://janus-slack.herokuapp.com/badge.svg)](https://janus-slack.herokuapp.com/)
 
 > An API Gateway written in Go
 
 This is a lightweight API Gateway and Management Platform that enables you to control who accesses your API,
 when they access it and how they access it. Janus will also record detailed analytics on how your
 users are interacting with your API and when things go wrong.
+
+Go version 1.9 or later is required to build master, the current development version. Janus is officially supported on `linux/amd64`, `linux/i386`, `linux/arm64`, `darwin/i386`, `darwin/amd64`, `windows/i386` and `windows/amd64`.
 
 ## Why Janus?
 
@@ -65,7 +67,7 @@ Now you should be able to get a response from the gateway.
 Try the following command:
 
 ```sh
-http http://localhost:8081/
+http http://localhost:8081
 ```
 
 ### Manual
@@ -88,7 +90,7 @@ To start contributing, please check [CONTRIBUTING](CONTRIBUTING.md).
 * Go lang: https://golang.org/
 
 ##
-<p align="center">  
+<p align="center">
     <a href="https://hellofresh.com" style="text-decoration:none; margin-right:2rem;">
     <img height="110" src="https://www.hellofresh.de/images/hellofresh/press/HelloFresh_Logo.png">
   </a>

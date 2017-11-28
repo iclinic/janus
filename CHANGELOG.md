@@ -1,14 +1,40 @@
 # Unreleased
 
+## Fixed
+
+- Monitor health check endpoints only of active proxies. Reported on #203
+- Fix hot reload was not working when using in memory storage implementation
+- Fix oauth servers post endpoint incorrect behaviour. Reported on #234
+
+## Added
+
+- Added Proxy Listen Path validation to prevent `chi` from panicking in case of invalid listen path
+- Added load balancing for upstream targets. Now you can add multiple upstream targets and Janus will balance the requests.
+
+## Fixed
+
+- Add constant time compare to basic auth password. Reported on #194
+
+## Deprecated
+
+- `upstream_url` is now deprecated in favor of using the `upstreams` object. This will allow Janus to balance requests if you have more than one upstream target.
+
+# 3.3.0
+
 ## Added
 
 - Added response transformer plugin
 - Added basic auth plugin
 - Added github login for the Admin API
 
+## Updated
+
+- Changed our dependency management tool from glide to Dep
+
 ## Fixed
 
 - Fixed problems when using -c flag to specify a configuration file
+- Fixed oAuth2 introspection token strategy when configuring an oauth server
 
 # 3.2.1
 
@@ -54,7 +80,7 @@
 
 - Using viper to load the API definitions when using file based configurations. This allows you to configure your API definitions in YAML, JSON and TOML.
 - The underling router was changed from [httptreemux](https://github.com/dimfeld/httptreemux) to [Chi](https://github.com/pressly/chi).
-- Proper Mux reload when an API or OAuth server is changed 
+- Proper Mux reload when an API or OAuth server is changed
 
 ## Added
 

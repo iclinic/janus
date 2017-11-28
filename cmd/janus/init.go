@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	mgo "gopkg.in/mgo.v2"
-
 	"github.com/hellofresh/janus/pkg/config"
 	tracerfactory "github.com/hellofresh/janus/pkg/opentracing"
 	"github.com/hellofresh/janus/pkg/store"
@@ -15,6 +13,7 @@ import (
 	"github.com/hellofresh/stats-go/hooks"
 	"github.com/opentracing/opentracing-go"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/mgo.v2"
 )
 
 var (
@@ -25,12 +24,16 @@ var (
 )
 
 func initConfig() {
-	c, err := config.Load(configFile)
+	var err error
+	globalConfig, err = config.Load(configFile)
 	if nil != err {
-		log.WithError(err).Panic("Could not parse the environment configurations")
-	}
+		log.WithError(err).Error("Could not load configurations from file - trying environment configurations instead.")
 
-	globalConfig = c
+		globalConfig, err = config.LoadEnv()
+		if nil != err {
+			log.WithError(err).Error("Could not load configurations from environment")
+		}
+	}
 }
 
 // initializes the basic configuration for the log wrapper

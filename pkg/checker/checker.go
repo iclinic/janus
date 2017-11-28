@@ -27,13 +27,15 @@ func NewOverviewHandler(repo api.Repository) func(w http.ResponseWriter, r *http
 		health.Reset()
 
 		for _, definition := range definitions {
-			log.WithField("name", definition.Name).Debug("Health check registered")
-			health.Register(health.Config{
-				Name:      definition.Name,
-				Timeout:   time.Second * time.Duration(definition.HealthCheck.Timeout),
-				SkipOnErr: true,
-				Check:     check(definition),
-			})
+			if definition.HealthCheck.URL != "" {
+				log.WithField("name", definition.Name).Debug("Registering health check")
+				health.Register(health.Config{
+					Name:      definition.Name,
+					Timeout:   time.Second * time.Duration(definition.HealthCheck.Timeout),
+					SkipOnErr: true,
+					Check:     check(definition),
+				})
+			}
 		}
 
 		health.HandlerFunc(w, r)
@@ -112,7 +114,7 @@ func check(definition *api.Definition) func() error {
 	return func() error {
 		resp, err := doStatusRequest(definition, true)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s health check endpoint %s is unreachable", definition.Name, definition.HealthCheck.URL)
 		}
 
 		if resp.StatusCode >= http.StatusInternalServerError {

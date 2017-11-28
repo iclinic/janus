@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hellofresh/janus/pkg/router"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,10 +43,23 @@ func (p *Register) AddMany(routes []*Route) error {
 func (p *Register) Add(route *Route) error {
 	definition := route.Proxy
 
+	var balancer Balancer
+	if definition.IsBalancerDefined() {
+		log.WithField("balancing_alg", definition.Upstreams.Balancing).Debug("Using a load balancing algorithm")
+
+		var err error
+		balancer, err = NewBalancer(definition.Upstreams.Balancing)
+		if err != nil {
+			msg := "Could not create a balancer"
+			log.WithError(err).Error(msg)
+			return errors.Wrap(err, msg)
+		}
+	}
+
 	p.params.Outbound = route.Outbound
 	p.params.InsecureSkipVerify = definition.InsecureSkipVerify
 	handler := &httputil.ReverseProxy{
-		Director:  p.createDirector(definition),
+		Director:  p.createDirector(definition, balancer),
 		Transport: NewTransportWithParams(p.params),
 	}
 
@@ -58,11 +72,29 @@ func (p *Register) Add(route *Route) error {
 	return nil
 }
 
-func (p *Register) createDirector(proxyDefinition *Definition) func(req *http.Request) {
+func (p *Register) createDirector(proxyDefinition *Definition, balancer Balancer) func(req *http.Request) {
 	return func(req *http.Request) {
-		target, _ := url.Parse(proxyDefinition.UpstreamURL)
-		targetQuery := target.RawQuery
+		var upstreamURL string
+		if proxyDefinition.IsBalancerDefined() && balancer != nil {
+			upstream, err := balancer.Elect(proxyDefinition.Upstreams.Targets)
+			if err != nil {
+				log.WithError(err).Error("Could not elect one upstream")
+				return
+			}
+			log.WithField("target", upstream.Target).Debug("Target upstream elected ")
+			upstreamURL = upstream.Target
+		} else {
+			log.Warn("The upstream URL is deprecated. Use Upstreams instead")
+			upstreamURL = proxyDefinition.UpstreamURL
+		}
 
+		target, err := url.Parse(upstreamURL)
+		if err != nil {
+			log.WithError(err).Error("Could not parse the target URL")
+			return
+		}
+
+		targetQuery := target.RawQuery
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		path := target.Path
@@ -84,7 +116,7 @@ func (p *Register) createDirector(proxyDefinition *Definition) func(req *http.Re
 			}
 		}
 
-		log.Debugf("Upstream Path is: %s", path)
+		log.WithField("path", path).Debug("Upstream Path")
 		req.URL.Path = path
 
 		// This is very important to avoid problems with ssl verification for the HOST header
@@ -106,11 +138,16 @@ func (p *Register) doRegister(listenPath string, handler http.HandlerFunc, metho
 		"listen_path": listenPath,
 	}).Debug("Registering a route")
 
-	for _, method := range methods {
-		if strings.ToUpper(method) == methodAll {
-			p.Router.Any(listenPath, handler, handlers...)
-		} else {
-			p.Router.Handle(strings.ToUpper(method), listenPath, handler, handlers...)
+	if strings.Index(listenPath, "/") != 0 {
+		log.WithField("listen_path", listenPath).
+			Error("Route listen path must begin with '/'.Skipping invalid route.")
+	} else {
+		for _, method := range methods {
+			if strings.ToUpper(method) == methodAll {
+				p.Router.Any(listenPath, handler, handlers...)
+			} else {
+				p.Router.Handle(strings.ToUpper(method), listenPath, handler, handlers...)
+			}
 		}
 	}
 }
@@ -134,13 +171,13 @@ func singleJoiningSlash(a, b string) string {
 	a = cleanSlashes(a)
 	b = cleanSlashes(b)
 
-	aslash := strings.HasSuffix(a, "/")
-	bslash := strings.HasPrefix(b, "/")
+	aSlash := strings.HasSuffix(a, "/")
+	bSlash := strings.HasPrefix(b, "/")
 
 	switch {
-	case aslash && bslash:
+	case aSlash && bSlash:
 		return a + b[1:]
-	case !aslash && !bslash:
+	case !aSlash && !bSlash:
 		if len(b) > 0 {
 			return a + "/" + b
 		}
