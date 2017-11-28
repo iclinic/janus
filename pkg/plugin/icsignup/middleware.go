@@ -30,6 +30,13 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Error("[signup middleware] - Starting...")
 
+			fields := log.Fields{
+				"Create User URL": createUserURL,
+				"Delete User URL": deleteUserURL,
+				"Subscription URL": subscriptionURL,
+			}
+			log.WithFields(fields).Error("Display urls...")
+
 			incomingBodyBuffer, _ := ioutil.ReadAll(r.Body)
 
 			res, err := DoRequest(http.MethodPost, createUserURL, incomingBodyBuffer)
