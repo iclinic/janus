@@ -23,7 +23,6 @@ var (
 	ErrParseIncomeRequestdata = errors.New(http.StatusInternalServerError, "Falha ao intepretar dados recebidos.")
 )
 
-
 // Midleware will hit iclinic auth service
 func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
@@ -35,7 +34,7 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 				"Delete User URL": deleteUserURL,
 				"Subscription URL": subscriptionURL,
 			}
-			log.WithFields(fields).Error("Display urls...")
+			log.WithFields(fields).Error("Signup urls...")
 
 			incomingBodyBuffer, _ := ioutil.ReadAll(r.Body)
 
@@ -64,11 +63,11 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 					return
 				}
 
-				apiData := postData.(map[string]interface{})
-				apiData["user"] = userData.(map[string]interface{})["id"]
+				apiRequestData := postData.(map[string]interface{})
+				apiRequestData["user"] = userData.(map[string]interface{})["id"]
 
 				apiBufBody := &bytes.Buffer{}
-				errAPIBufBody := json.NewEncoder(apiBufBody).Encode(apiData)
+				errAPIBufBody := json.NewEncoder(apiBufBody).Encode(apiRequestData)
 				if errAPIBufBody != nil {
 					log.Error("Error when buffering api request data.", err)
 				}
@@ -93,7 +92,7 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 						return
 					}
 
-					deleteUserEndpoint := strings.Replace(deleteUserURL, "<id>", apiData["user"].(string), 1)
+					deleteUserEndpoint := strings.Replace(deleteUserURL, "<id>", apiRequestData["user"].(string), 1)
 
 					DoRequest(http.MethodDelete, deleteUserEndpoint, nil)
 
