@@ -1,6 +1,6 @@
 FROM alpine AS builder
 
-ARG JANUS_VERSION
+ENV JANUS_VERSION 3.4.1
 
 RUN apk add --no-cache openssl tar \
     && wget -O janus.tar.gz https://github.com/hellofresh/janus/releases/download/${JANUS_VERSION}/janus_linux-amd64.tar.gz \

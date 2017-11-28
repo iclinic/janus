@@ -1,15 +1,15 @@
 package icauth
 
 import (
-	"fmt"
-	"encoding/json"
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
-	
-	"github.com/hellofresh/janus/pkg/proxy"
+
 	"github.com/hellofresh/janus/pkg/errors"
+	"github.com/hellofresh/janus/pkg/proxy"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,6 +36,7 @@ func Midleware(url string) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeaderValue := r.Header.Get("Authorization")
+
 			parts := strings.Split(authHeaderValue, " ")
 			if len(parts) < 2 {
 				errors.Handler(w, ErrAuthorizationFieldNotFound)
@@ -77,6 +78,7 @@ func Midleware(url string) func(http.Handler) http.Handler {
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
 
 				ctx := context.WithValue(r.Context(), "token", token.Token)
+
 				handler.ServeHTTP(w, r.WithContext(ctx))
 			} else {
 				handler.ServeHTTP(w, r)

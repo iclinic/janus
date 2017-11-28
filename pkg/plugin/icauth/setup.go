@@ -1,8 +1,8 @@
 package icauth
 
 import (
-	"github.com/hellofresh/janus/pkg/proxy"
 	"github.com/hellofresh/janus/pkg/plugin"
+	"github.com/hellofresh/janus/pkg/proxy"
 )
 
 // Config has a URL field which stores identity verify token url
@@ -10,7 +10,7 @@ type Config struct {
 	URL string `json:"url"`
 }
 
-func init()  {
+func init() {
 	plugin.RegisterPlugin("auth", plugin.Plugin{
 		Action: setupAuth,
 	})

@@ -1,15 +1,15 @@
 package icsignup
 
 import (
-	"strings"
-	"time"
-	"io/ioutil"
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
-	
-	"github.com/hellofresh/janus/pkg/render"
+	"strings"
+	"time"
+
 	"github.com/hellofresh/janus/pkg/errors"
+	"github.com/hellofresh/janus/pkg/render"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -30,8 +30,8 @@ func Midleware(createUserURL, deleteUserURL, subscriptionURL string) func(http.H
 			log.Error("[signup middleware] - Starting...")
 
 			fields := log.Fields{
-				"Create User URL": createUserURL,
-				"Delete User URL": deleteUserURL,
+				"Create User URL":  createUserURL,
+				"Delete User URL":  deleteUserURL,
 				"Subscription URL": subscriptionURL,
 			}
 			log.WithFields(fields).Error("Signup urls...")
