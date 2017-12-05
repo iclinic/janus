@@ -31,5 +31,5 @@ _book
 node_modules/
 
 # HF config files
-/dist
+#/dist
 debug
