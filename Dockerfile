@@ -1,25 +1,39 @@
-FROM alpine AS builder
+# FROM alpine AS builder
 
-ENV JANUS_VERSION 3.4.1
+# ENV JANUS_VERSION 3.4.1
 
-RUN apk add --no-cache openssl tar \
-    && wget -O janus.tar.gz https://github.com/hellofresh/janus/releases/download/${JANUS_VERSION}/janus_linux-amd64.tar.gz \
-    && tar -xzf janus.tar.gz -C /tmp
+# RUN apk add --no-cache openssl tar \
+#     && wget -O janus.tar.gz https://github.com/hellofresh/janus/releases/download/${JANUS_VERSION}/janus_linux-amd64.tar.gz \
+#     && tar -xzf janus.tar.gz -C /tmp
 
-# ---
+# # ---
+
+# FROM alpine
+
+# ADD assets/ca-certificates.crt /etc/ssl/certs/
+# COPY --from=builder /tmp/janus_linux-amd64 /
+
+# RUN mkdir -p /etc/janus/apis && \
+#     mkdir -p /etc/janus/auth
+
+# RUN apk add --update curl && \
+#     rm -rf /var/cache/apk/*
+
+# HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD curl -f http://localhost:8081/status || exit 1
+
+# EXPOSE 8080 8081 8443 8444
+# ENTRYPOINT ["/janus_linux-amd64"]
 
 FROM alpine
 
 ADD assets/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /tmp/janus_linux-amd64 /
+ADD dist/janus_linux-amd64 /
 
 RUN mkdir -p /etc/janus/apis && \
     mkdir -p /etc/janus/auth
 
 RUN apk add --update curl && \
     rm -rf /var/cache/apk/*
-
-HEALTHCHECK --interval=5s --timeout=5s --retries=3 CMD curl -f http://localhost:8081/status || exit 1
 
 EXPOSE 8080 8081 8443 8444
 ENTRYPOINT ["/janus_linux-amd64"]
